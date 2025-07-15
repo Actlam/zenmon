@@ -11,7 +11,9 @@ class ZenResponseGenerator {
     emotional: ["辛い", "悲しい", "不安", "怖い", "寂しい", "ストレス", "疲れ", "痛い", "苦しい"]
   };
 
-  private responseTemplates = {
+  private responseTemplates: {
+    [key: string]: string[] | { [timeKey: string]: string[] }
+  } = {
     greeting: {
       morning: ["朝の静けさに包まれて。\n\n今日という日に、何を見つけられるでしょうか？"],
       day: ["日中の光の中で。\n\n今この瞬間に、心はどこにありますか？"],
@@ -84,16 +86,19 @@ class ZenResponseGenerator {
   generateResponse(message: string): string {
     const intent = this.analyzeIntent(message);
     const timeContext = this.getCurrentTimeContext();
-    const season = this.getCurrentSeason();
+    const season = this.getCurrentSeason() as keyof typeof this.seasonalElements;
 
     let templates = this.responseTemplates[intent as keyof typeof this.responseTemplates];
+    let selectedResponse: string;
     
-    if (intent === "greeting" && typeof templates === "object") {
-      templates = (templates as any)[timeContext] || (templates as any)["day"];
+    if (intent === "greeting" && typeof templates === "object" && !Array.isArray(templates)) {
+      const timeTemplates = (templates as { [key: string]: string[] })[timeContext] || (templates as { [key: string]: string[] })["day"];
+      selectedResponse = timeTemplates[Math.floor(Math.random() * timeTemplates.length)];
+    } else if (Array.isArray(templates)) {
+      selectedResponse = templates[Math.floor(Math.random() * templates.length)];
+    } else {
+      selectedResponse = "ただ、ここに在る。";
     }
-
-    const responseArray = Array.isArray(templates) ? templates : [templates].flat();
-    const selectedResponse = responseArray[Math.floor(Math.random() * responseArray.length)];
 
     // 季節的要素を時々追加
     if (Math.random() < 0.3) {
