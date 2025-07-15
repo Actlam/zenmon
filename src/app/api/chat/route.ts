@@ -214,8 +214,6 @@ export async function POST(req: Request) {
     }
 
     console.log('Calling OpenAI API...');
-    console.log('API Key present:', !!process.env.OPENAI_API_KEY);
-    console.log('API Key length:', process.env.OPENAI_API_KEY?.length || 0);
     
     const result = await streamText({
       model: openai('gpt-4o-mini'),
