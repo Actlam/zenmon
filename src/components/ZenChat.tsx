@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 export default function ZenChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [isMockMode, setIsMockMode] = useState(false);
   
   const { messages, input, handleInputChange, handleSubmit, isLoading, error, data } = useChat({
@@ -43,6 +44,16 @@ export default function ZenChat() {
       setTimeout(scrollToBottom, 100);
     }
   }, [isLoading]);
+
+  // AI応答が完了したら入力欄にフォーカス
+  useEffect(() => {
+    if (!isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+      // 少し遅延してフォーカス（アニメーションが完了してから）
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 500);
+    }
+  }, [isLoading, messages]);
 
   // カスタムフォーム送信ハンドラー
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -132,6 +143,7 @@ export default function ZenChat() {
         <form onSubmit={handleFormSubmit} className="p-4 sm:p-6 border-t border-stone-200/50 dark:border-stone-700/50 flex-shrink-0">
           <div className="flex space-x-3 w-full">
             <input
+              ref={inputRef}
               value={input}
               placeholder="何をお聞きになりたいでしょうか..."
               onChange={handleInputChange}
