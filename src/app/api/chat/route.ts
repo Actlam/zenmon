@@ -183,6 +183,9 @@ async function createMockResponse(messages: any[]) {
         await new Promise(resolve => setTimeout(resolve, 40)); // 少し遅めに
       }
       
+      // メタデータとしてモックモードであることを送信
+      controller.enqueue(encoder.encode(`8:[{"isMockMode":true}]\n`));
+      
       controller.close();
     }
   });
@@ -190,6 +193,7 @@ async function createMockResponse(messages: any[]) {
   return new Response(mockStream, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
+      'X-Mock-Mode': 'true',
     },
   });
 }
@@ -205,6 +209,12 @@ export async function POST(req: Request) {
     console.log('Messages received:', messages);
 
     // モックモードかどうかを環境変数で判定
+    console.log('Environment check:', {
+      USE_MOCK_MODE: process.env.USE_MOCK_MODE,
+      OPENAI_API_KEY_EXISTS: !!process.env.OPENAI_API_KEY,
+      OPENAI_API_KEY_LENGTH: process.env.OPENAI_API_KEY?.length || 0
+    });
+    
     const useMockMode = process.env.USE_MOCK_MODE === 'true' || !process.env.OPENAI_API_KEY;
     
     if (useMockMode) {
@@ -232,9 +242,21 @@ export async function POST(req: Request) {
     return result.toDataStreamResponse();
   } catch (error) {
     console.error('Chat API error:', error);
-    console.log('Falling back to mock mode due to error');
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
-    // エラーが発生した場合はモックモードにフォールバック
+    // APIキーが設定されている場合はエラーを返す
+    if (process.env.OPENAI_API_KEY) {
+      return Response.json(
+        { error: 'Failed to process request with OpenAI API' },
+        { status: 500 }
+      );
+    }
+    
+    // APIキーがない場合のみモックモードにフォールバック
+    console.log('Falling back to mock mode due to missing API key');
     await new Promise(resolve => setTimeout(resolve, 1000));
     return createMockResponse(messages.length > 0 ? messages : [{ role: 'user', content: 'エラー' }]);
   }

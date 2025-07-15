@@ -8,10 +8,16 @@ import { cn } from '@/lib/utils';
 export default function ZenChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isMockMode, setIsMockMode] = useState(false);
   
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, data } = useChat({
     onError: (error) => {
       console.error('Chat error:', error);
+    },
+    onResponse: (response) => {
+      // レスポンスヘッダーからモックモードを検出
+      const mockMode = response.headers.get('X-Mock-Mode') === 'true';
+      setIsMockMode(mockMode);
     }
   });
 
@@ -47,7 +53,17 @@ export default function ZenChat() {
   
   return (
     <div className="max-w-4xl mx-auto flex-1 flex flex-col min-h-0 w-full">
-      <div className="bg-white/70 dark:bg-stone-900/70 backdrop-blur-sm rounded-lg shadow-lg border border-stone-200/50 dark:border-stone-700/50 flex-1 flex flex-col min-h-0">
+      <div className="bg-white/70 dark:bg-stone-900/70 backdrop-blur-sm rounded-lg shadow-lg border border-stone-200/50 dark:border-stone-700/50 flex-1 flex flex-col min-h-0 relative">
+        
+        {/* モックモードインジケーター */}
+        {isMockMode && (
+          <div className="absolute top-4 right-4 z-10">
+            <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2">
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+              モックモード
+            </div>
+          </div>
+        )}
         
         <div 
           ref={messagesContainerRef}
